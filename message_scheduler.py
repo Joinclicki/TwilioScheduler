@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 message_scheduler = Blueprint('message_scheduler', __name__)
 
 def is_valid_phone_number(phone_number):
-    # Basic E.164 format validation
     pattern = r'^\+[1-9]\d{1,14}$'
     return re.match(pattern, phone_number) is not None
 
@@ -41,13 +40,11 @@ def schedule_blast():
     if request.method == 'POST':
         csv_file = request.files['csv_file']
         message_template = request.form['message_template']
+        mms_url = request.form.get('mms_url')  # Get the MMS URL from the form
         scheduled_time = datetime.strptime(request.form['scheduled_time'], '%Y-%m-%dT%H:%M')
         
-        # Convert to Eastern Time
         eastern = pytz.timezone('US/Eastern')
         scheduled_time_et = eastern.localize(scheduled_time)
-        
-        # Convert to UTC
         scheduled_time_utc = scheduled_time_et.astimezone(pytz.UTC)
 
         now_utc = datetime.now(pytz.UTC)
@@ -70,11 +67,12 @@ def schedule_blast():
             new_blast = ScheduledBlast(
                 user_id=current_user.id,
                 message_template=message_template,
+                mms_url=mms_url,  # Add the MMS URL to the new blast
                 scheduled_time=scheduled_time_utc,
                 status='scheduled'
             )
             db.session.add(new_blast)
-            db.session.flush()  # This assigns an ID to new_blast
+            db.session.flush()
             logger.info(f"Created new ScheduledBlast with ID: {new_blast.id}")
 
             invalid_phone_numbers = []
@@ -95,13 +93,12 @@ def schedule_blast():
                     db.session.add(recipient)
                     logger.info(f"Created new Recipient with phone number: {phone_number}")
                 else:
-                    # Update existing recipient's information
                     recipient.name = row.get('name', recipient.name)
                     recipient.email = row.get('email', recipient.email)
                     recipient.custom_fields.update({k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']})
                     logger.info(f"Updated existing Recipient with phone number: {phone_number}")
 
-                db.session.flush()  # This assigns an ID to recipient if it's new
+                db.session.flush()
 
                 association = RecipientBlastAssociation(
                     recipient_id=recipient.id,
@@ -113,7 +110,7 @@ def schedule_blast():
             if invalid_phone_numbers:
                 flash(f'The following phone numbers are invalid and were skipped: {", ".join(invalid_phone_numbers)}', 'warning')
 
-            db.session.commit()  # Commit the changes before scheduling with Twilio
+            db.session.commit()
             logger.info(f"Committed changes to database for ScheduledBlast ID: {new_blast.id}")
 
             twilio_message_sids = schedule_twilio_message(new_blast)
@@ -171,5 +168,4 @@ def cancel_blast(blast_id):
     
     return redirect(url_for('message_scheduler.dashboard'))
 
-# Register the blueprint with the Flask app
 app.register_blueprint(message_scheduler)

@@ -37,9 +37,10 @@ class ScheduledBlast(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = relationship('User', back_populates='scheduled_blasts')
     message_template = db.Column(db.Text, nullable=False)
+    mms_url = db.Column(db.String(255))  # New field for MMS URL
     scheduled_time = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled')
-    twilio_message_sid = db.Column(db.Text)  # Changed from String(34) to Text
+    twilio_message_sid = db.Column(db.Text)
     recipient_associations = relationship('RecipientBlastAssociation', back_populates='scheduled_blast', cascade='all, delete-orphan')
 
     def set_twilio_message_sids(self, sids):

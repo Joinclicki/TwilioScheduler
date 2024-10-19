@@ -42,13 +42,19 @@ def schedule_twilio_message(scheduled_blast):
             continue
 
         try:
-            message = client.messages.create(
-                messaging_service_sid=TWILIO_MESSAGING_SERVICE_SID,
-                body=personalized_message,
-                schedule_type="fixed",
-                send_at=scheduled_blast.scheduled_time.isoformat(),
-                to=recipient.phone_number
-            )
+            message_params = {
+                'messaging_service_sid': TWILIO_MESSAGING_SERVICE_SID,
+                'body': personalized_message,
+                'schedule_type': "fixed",
+                'send_at': scheduled_blast.scheduled_time.isoformat(),
+                'to': recipient.phone_number
+            }
+            
+            # Add MMS URL if provided
+            if scheduled_blast.mms_url:
+                message_params['media_url'] = [scheduled_blast.mms_url]
+
+            message = client.messages.create(**message_params)
             message_sids.append(message.sid)
             logger.info(f"Scheduled message for {recipient.phone_number}: SID {message.sid}")
         except TwilioRestException as e:

@@ -22,6 +22,11 @@
         <small class="form-text text-muted">Use {field_name} for dynamic content (e.g., Hello {name}!)</small>
     </div>
     <div class="mb-3">
+        <label for="mms_url" class="form-label">MMS URL (Optional)</label>
+        <input type="url" class="form-control" id="mms_url" name="mms_url">
+        <small class="form-text text-muted">Enter a valid URL for an image or media to be sent with the message</small>
+    </div>
+    <div class="mb-3">
         <label for="scheduled_time" class="form-label">Scheduled Time</label>
         <input type="datetime-local" class="form-control" id="scheduled_time" name="scheduled_time" required>
     </div>
