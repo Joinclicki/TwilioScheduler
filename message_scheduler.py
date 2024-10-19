@@ -22,49 +22,64 @@ def schedule_blast():
         scheduled_time = datetime.strptime(request.form.get('scheduled_time'), '%Y-%m-%dT%H:%M')
         
         if scheduled_time < datetime.now() + timedelta(minutes=15):
-            flash('Scheduled time must be at least 15 minutes in the future.')
+            flash('Scheduled time must be at least 15 minutes in the future.', 'danger')
             return redirect(url_for('schedule_blast'))
         
         if scheduled_time > datetime.now() + timedelta(days=35):
-            flash('Scheduled time must be within 35 days from now.')
+            flash('Scheduled time must be within 35 days from now.', 'danger')
             return redirect(url_for('schedule_blast'))
         
         if csv_file:
-            csv_content = csv_file.read().decode('utf-8')
-            csv_data = csv.DictReader(StringIO(csv_content))
-            
-            new_blast = ScheduledBlast(
-                user_id=current_user.id,
-                message_template=message_template,
-                scheduled_time=scheduled_time
-            )
-            db.session.add(new_blast)
-            db.session.flush()
-            
-            for row in csv_data:
-                recipient = Recipient(
-                    phone_number=row['phone_number'],
-                    name=row.get('name'),
-                    email=row.get('email'),
-                    custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
+            try:
+                csv_content = csv_file.read().decode('utf-8')
+                csv_data = csv.DictReader(StringIO(csv_content))
+                
+                new_blast = ScheduledBlast(
+                    user_id=current_user.id,
+                    message_template=message_template,
+                    scheduled_time=scheduled_time
                 )
-                db.session.add(recipient)
+                db.session.add(new_blast)
                 db.session.flush()
                 
-                association = RecipientBlastAssociation(
-                    recipient_id=recipient.id,
-                    scheduled_blast_id=new_blast.id
-                )
-                db.session.add(association)
-            
-            db.session.commit()
-            
-            twilio_message_sid = schedule_twilio_message(new_blast)
-            new_blast.twilio_message_sid = twilio_message_sid
-            db.session.commit()
-            
-            flash('Message blast scheduled successfully!')
-            return redirect(url_for('dashboard'))
+                for row in csv_data:
+                    if 'phone_number' not in row:
+                        flash('CSV file must contain a "phone_number" column.', 'danger')
+                        return redirect(url_for('schedule_blast'))
+                    
+                    recipient = Recipient(
+                        phone_number=row['phone_number'],
+                        name=row.get('name'),
+                        email=row.get('email'),
+                        custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
+                    )
+                    db.session.add(recipient)
+                    db.session.flush()
+                    
+                    association = RecipientBlastAssociation(
+                        recipient_id=recipient.id,
+                        scheduled_blast_id=new_blast.id
+                    )
+                    db.session.add(association)
+                
+                db.session.commit()
+                
+                twilio_message_sid = schedule_twilio_message(new_blast)
+                if twilio_message_sid:
+                    new_blast.twilio_message_sid = twilio_message_sid
+                    db.session.commit()
+                    flash('Message blast scheduled successfully!', 'success')
+                else:
+                    flash('Failed to schedule the message blast with Twilio.', 'danger')
+                
+                return redirect(url_for('dashboard'))
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Error processing CSV file: {str(e)}', 'danger')
+                return redirect(url_for('schedule_blast'))
+        else:
+            flash('Please upload a CSV file.', 'danger')
+            return redirect(url_for('schedule_blast'))
     
     return render_template('schedule_blast.html')
 
@@ -73,18 +88,18 @@ def schedule_blast():
 def cancel_blast(blast_id):
     blast = ScheduledBlast.query.get_or_404(blast_id)
     if blast.user_id != current_user.id:
-        flash('You are not authorized to cancel this blast.')
+        flash('You are not authorized to cancel this blast.', 'danger')
         return redirect(url_for('dashboard'))
     
     if blast.status == 'scheduled':
-        # Cancel the Twilio scheduled message
         from twilio_integration import cancel_twilio_message
-        cancel_twilio_message(blast.twilio_message_sid)
-        
-        blast.status = 'canceled'
-        db.session.commit()
-        flash('Message blast canceled successfully.')
+        if cancel_twilio_message(blast.twilio_message_sid):
+            blast.status = 'canceled'
+            db.session.commit()
+            flash('Message blast canceled successfully.', 'success')
+        else:
+            flash('Failed to cancel the message blast with Twilio.', 'danger')
     else:
-        flash('This blast cannot be canceled.')
+        flash('This blast cannot be canceled.', 'warning')
     
     return redirect(url_for('dashboard'))

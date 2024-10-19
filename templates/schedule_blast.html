@@ -4,11 +4,11 @@
 
 {% block content %}
 <h2 class="mb-4">Schedule Message Blast</h2>
-<form method="POST" enctype="multipart/form-data">
+<form method="POST" enctype="multipart/form-data" id="scheduleBlastForm">
     <div class="mb-3">
         <label for="csv_file" class="form-label">Upload CSV File</label>
         <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
-        <small class="form-text text-muted">CSV should contain columns: phone_number, name, email, and any custom fields</small>
+        <small class="form-text text-muted">CSV should contain columns: phone_number (required), name, email, and any custom fields</small>
     </div>
     <div class="mb-3">
         <label for="message_template" class="form-label">Message Template</label>
@@ -21,4 +21,8 @@
     </div>
     <button type="submit" class="btn btn-primary">Schedule Blast</button>
 </form>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
 {% endblock %}
