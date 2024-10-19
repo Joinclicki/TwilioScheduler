@@ -25,6 +25,14 @@ def is_valid_phone_number(phone_number):
 @login_required
 def dashboard():
     scheduled_blasts = ScheduledBlast.query.filter_by(user_id=current_user.id).all()
+    for blast in scheduled_blasts:
+        blast.recipient_count = len(blast.recipient_associations)
+        blast.status_color = {
+            'scheduled': 'primary',
+            'sent': 'success',
+            'canceled': 'danger',
+            'failed': 'warning'
+        }.get(blast.status, 'secondary')
     return render_template('dashboard.html', scheduled_blasts=scheduled_blasts)
 
 @message_scheduler.route('/schedule_blast', methods=['GET', 'POST'])

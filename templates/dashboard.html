@@ -8,32 +8,58 @@
     <div class="col-md-12">
         <h3>Scheduled Message Blasts</h3>
         {% if scheduled_blasts %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Scheduled Time (UTC)</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for blast in scheduled_blasts %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td>{{ blast.id }}</td>
-                            <td>{{ blast.scheduled_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                            <td>{{ blast.status }}</td>
-                            <td>
-                                {% if blast.status == 'scheduled' %}
-                                    <form method="POST" action="{{ url_for('message_scheduler.cancel_blast', blast_id=blast.id) }}">
-                                        <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
-                                    </form>
-                                {% endif %}
-                            </td>
+                            <th>ID</th>
+                            <th>Scheduled Time (UTC)</th>
+                            <th>Status</th>
+                            <th>Recipients</th>
+                            <th>Message Preview</th>
+                            <th>Actions</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for blast in scheduled_blasts %}
+                            <tr>
+                                <td>{{ blast.id }}</td>
+                                <td>{{ blast.scheduled_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                <td>
+                                    <span class="badge bg-{{ blast.status_color }}">{{ blast.status }}</span>
+                                </td>
+                                <td>{{ blast.recipient_count }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#messagePreviewModal{{ blast.id }}">
+                                        Preview
+                                    </button>
+                                </td>
+                                <td>
+                                    {% if blast.status == 'scheduled' %}
+                                        <form method="POST" action="{{ url_for('message_scheduler.cancel_blast', blast_id=blast.id) }}" class="d-inline">
+                                            <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            <!-- Message Preview Modal -->
+                            <div class="modal fade" id="messagePreviewModal{{ blast.id }}" tabindex="-1" aria-labelledby="messagePreviewModalLabel{{ blast.id }}" aria-hidden="true">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="messagePreviewModalLabel{{ blast.id }}">Message Preview</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <pre>{{ blast.message_template }}</pre>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
             <p>No scheduled blasts yet.</p>
         {% endif %}
