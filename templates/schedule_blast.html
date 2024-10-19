@@ -11,6 +11,12 @@
         <small class="form-text text-muted">CSV should contain columns: phone_number (required), name, email, and any custom fields</small>
     </div>
     <div class="mb-3">
+        <label for="field_picker" class="form-label">Insert Field</label>
+        <select class="form-select" id="field_picker" disabled>
+            <option value="">Select a field</option>
+        </select>
+    </div>
+    <div class="mb-3">
         <label for="message_template" class="form-label">Message Template</label>
         <textarea class="form-control" id="message_template" name="message_template" rows="4" required></textarea>
         <small class="form-text text-muted">Use {field_name} for dynamic content (e.g., Hello {name}!)</small>

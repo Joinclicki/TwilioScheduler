@@ -1,7 +1,7 @@
 import csv
 from io import StringIO
 from datetime import datetime, timedelta
-from flask import render_template, request, redirect, url_for, flash
+from flask import render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from app import app, db
 from models import Recipient, ScheduledBlast, RecipientBlastAssociation
@@ -21,11 +21,12 @@ def schedule_blast():
         message_template = request.form.get('message_template')
         scheduled_time = datetime.strptime(request.form.get('scheduled_time'), '%Y-%m-%dT%H:%M')
         
-        if scheduled_time < datetime.now() + timedelta(minutes=15):
+        current_time = datetime.now()
+        if scheduled_time < current_time + timedelta(minutes=15):
             flash('Scheduled time must be at least 15 minutes in the future.', 'danger')
             return redirect(url_for('schedule_blast'))
         
-        if scheduled_time > datetime.now() + timedelta(days=35):
+        if scheduled_time > current_time + timedelta(days=35):
             flash('Scheduled time must be within 35 days from now.', 'danger')
             return redirect(url_for('schedule_blast'))
         
@@ -82,6 +83,20 @@ def schedule_blast():
             return redirect(url_for('schedule_blast'))
     
     return render_template('schedule_blast.html')
+
+@app.route('/preview_csv', methods=['POST'])
+@login_required
+def preview_csv():
+    csv_file = request.files.get('csv_file')
+    if csv_file:
+        try:
+            csv_content = csv_file.read().decode('utf-8')
+            csv_data = csv.DictReader(StringIO(csv_content))
+            headers = csv_data.fieldnames
+            return jsonify({'headers': headers})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 400
+    return jsonify({'error': 'No CSV file provided'}), 400
 
 @app.route('/cancel_blast/<int:blast_id>', methods=['POST'])
 @login_required
