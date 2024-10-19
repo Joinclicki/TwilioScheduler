@@ -11,7 +11,7 @@ def load_user(user_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('message_scheduler.dashboard'))
     
     if request.method == 'POST':
         username = request.form.get('username')
@@ -19,7 +19,7 @@ def login():
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
             login_user(user)
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('message_scheduler.dashboard'))
         else:
             flash('Invalid username or password')
     return render_template('login.html')
@@ -27,7 +27,7 @@ def login():
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('message_scheduler.dashboard'))
     
     if request.method == 'POST':
         username = request.form.get('username')

@@ -26,7 +26,9 @@ login_manager.login_view = 'login'
 with app.app_context():
     import models
     import auth
-    import message_scheduler
+    from message_scheduler import message_scheduler
+    # Remove this line as we're registering the blueprint in message_scheduler.py
+    # app.register_blueprint(message_scheduler)
     db.create_all()
 
 if __name__ == '__main__':
