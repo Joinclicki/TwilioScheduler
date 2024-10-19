@@ -3,67 +3,107 @@
 {% block title %}Dashboard{% endblock %}
 
 {% block content %}
-<h2 class="mb-4">Dashboard</h2>
-<div class="row">
-    <div class="col-md-12">
-        <h3>Scheduled Message Blasts</h3>
-        {% if scheduled_blasts %}
-            <div class="table-responsive">
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Scheduled Time (UTC)</th>
-                            <th>Status</th>
-                            <th>Recipients</th>
-                            <th>Message Preview</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for blast in scheduled_blasts %}
+<div class="container mt-4">
+    <h2 class="mb-4">Message Blast Dashboard</h2>
+    <div class="row">
+        <div class="col-md-12">
+            <h3>Scheduled Message Blasts</h3>
+            {% if scheduled_blasts %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
                             <tr>
-                                <td>{{ blast.id }}</td>
-                                <td>{{ blast.scheduled_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                                <td>
-                                    <span class="badge bg-{{ blast.status_color }}">{{ blast.status }}</span>
-                                </td>
-                                <td>{{ blast.recipient_count }}</td>
-                                <td>
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#messagePreviewModal{{ blast.id }}">
-                                        Preview
-                                    </button>
-                                </td>
-                                <td>
-                                    {% if blast.status == 'scheduled' %}
-                                        <form method="POST" action="{{ url_for('message_scheduler.cancel_blast', blast_id=blast.id) }}" class="d-inline">
-                                            <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
-                                        </form>
-                                    {% endif %}
-                                </td>
+                                <th>ID</th>
+                                <th>Blast Name</th>
+                                <th>Scheduled Time (UTC)</th>
+                                <th>Status</th>
+                                <th>Recipients</th>
+                                <th>Message Preview</th>
+                                <th>Actions</th>
                             </tr>
-                            <!-- Message Preview Modal -->
-                            <div class="modal fade" id="messagePreviewModal{{ blast.id }}" tabindex="-1" aria-labelledby="messagePreviewModalLabel{{ blast.id }}" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title" id="messagePreviewModalLabel{{ blast.id }}">Message Preview</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <pre>{{ blast.message_template }}</pre>
+                        </thead>
+                        <tbody>
+                            {% for blast in scheduled_blasts %}
+                                <tr>
+                                    <td>{{ blast.id }}</td>
+                                    <td>{{ blast.blast_name }}</td>
+                                    <td>{{ blast.scheduled_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                                    <td>
+                                        <span class="badge bg-{{ blast.status_color }}">{{ blast.status }}</span>
+                                    </td>
+                                    <td>{{ blast.recipient_count }}</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#messagePreviewModal{{ blast.id }}">
+                                            Preview
+                                        </button>
+                                    </td>
+                                    <td>
+                                        {% if blast.status == 'scheduled' %}
+                                            <form method="POST" action="{{ url_for('message_scheduler.cancel_blast', blast_id=blast.id) }}" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+                                            </form>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-secondary" data-bs-toggle="modal" data-bs-target="#blastDetailsModal{{ blast.id }}">
+                                            Details
+                                        </button>
+                                    </td>
+                                </tr>
+                                <!-- Message Preview Modal -->
+                                <div class="modal fade" id="messagePreviewModal{{ blast.id }}" tabindex="-1" aria-labelledby="messagePreviewModalLabel{{ blast.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="messagePreviewModalLabel{{ blast.id }}">Message Preview</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <pre>{{ blast.message_template }}</pre>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        {% else %}
-            <p>No scheduled blasts yet.</p>
-        {% endif %}
-        <a href="{{ url_for('message_scheduler.schedule_blast') }}" class="btn btn-primary">Schedule New Blast</a>
+                                <!-- Blast Details Modal -->
+                                <div class="modal fade" id="blastDetailsModal{{ blast.id }}" tabindex="-1" aria-labelledby="blastDetailsModalLabel{{ blast.id }}" aria-hidden="true">
+                                    <div class="modal-dialog modal-lg">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="blastDetailsModalLabel{{ blast.id }}">Blast Details</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <h6>Blast Information</h6>
+                                                <ul class="list-group mb-3">
+                                                    <li class="list-group-item"><strong>ID:</strong> {{ blast.id }}</li>
+                                                    <li class="list-group-item"><strong>Name:</strong> {{ blast.blast_name }}</li>
+                                                    <li class="list-group-item"><strong>Status:</strong> {{ blast.status }}</li>
+                                                    <li class="list-group-item"><strong>Scheduled Time (UTC):</strong> {{ blast.scheduled_time.strftime('%Y-%m-%d %H:%M:%S') }}</li>
+                                                    <li class="list-group-item"><strong>Recipients Count:</strong> {{ blast.recipient_count }}</li>
+                                                </ul>
+                                                <h6>Message Template</h6>
+                                                <pre class="bg-light p-2 rounded">{{ blast.message_template }}</pre>
+                                                <h6>Recipient Sample (up to 5)</h6>
+                                                <ul class="list-group">
+                                                    {% for association in blast.recipient_associations[:5] %}
+                                                        <li class="list-group-item">
+                                                            <strong>Phone:</strong> {{ association.recipient.phone_number }}<br>
+                                                            <strong>Name:</strong> {{ association.recipient.name or 'N/A' }}<br>
+                                                            <strong>Email:</strong> {{ association.recipient.email or 'N/A' }}
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="alert alert-info">No scheduled blasts yet.</p>
+            {% endif %}
+            <a href="{{ url_for('message_scheduler.schedule_blast') }}" class="btn btn-primary mt-3">Schedule New Blast</a>
+        </div>
     </div>
 </div>
 {% endblock %}
