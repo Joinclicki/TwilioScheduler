@@ -1,6 +1,8 @@
 from app import db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy.orm import validates
+import re
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -20,6 +22,12 @@ class Recipient(db.Model):
     name = db.Column(db.String(100))
     email = db.Column(db.String(120))
     custom_fields = db.Column(db.JSON)
+
+    @validates('phone_number')
+    def validate_phone_number(self, key, phone_number):
+        if not re.match(r'^\+[1-9]\d{1,14}$', phone_number):
+            raise ValueError('Invalid phone number format. Must be in E.164 format.')
+        return phone_number
 
 class ScheduledBlast(db.Model):
     id = db.Column(db.Integer, primary_key=True)

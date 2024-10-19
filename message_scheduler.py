@@ -7,8 +7,14 @@ import csv
 from datetime import datetime, timedelta
 import pytz
 from app import app
+import re
 
 message_scheduler = Blueprint('message_scheduler', __name__)
+
+def is_valid_phone_number(phone_number):
+    # Basic E.164 format validation
+    pattern = r'^\+[1-9]\d{1,14}$'
+    return re.match(pattern, phone_number) is not None
 
 @message_scheduler.route('/dashboard')
 @login_required
@@ -44,6 +50,10 @@ def schedule_blast():
             csv_content = csv_file.read().decode('utf-8')
             csv_data = csv.DictReader(StringIO(csv_content))
             
+            if 'phone_number' not in csv_data.fieldnames:
+                flash('CSV file must contain a "phone_number" column.', 'danger')
+                return redirect(url_for('message_scheduler.schedule_blast'))
+
             new_blast = ScheduledBlast(
                 user_id=current_user.id,
                 message_template=message_template,
@@ -53,9 +63,15 @@ def schedule_blast():
             db.session.add(new_blast)
             db.session.flush()  # This assigns an ID to new_blast
 
+            invalid_phone_numbers = []
             for row in csv_data:
+                phone_number = row.get('phone_number', '').strip()
+                if not phone_number or not is_valid_phone_number(phone_number):
+                    invalid_phone_numbers.append(phone_number)
+                    continue
+
                 recipient = Recipient(
-                    phone_number=row['phone_number'],
+                    phone_number=phone_number,
                     name=row.get('name', ''),
                     email=row.get('email', ''),
                     custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
@@ -68,6 +84,9 @@ def schedule_blast():
                     scheduled_blast_id=new_blast.id
                 )
                 db.session.add(association)
+
+            if invalid_phone_numbers:
+                flash(f'The following phone numbers are invalid and were skipped: {", ".join(invalid_phone_numbers)}', 'warning')
 
             twilio_message_sid = schedule_twilio_message(new_blast)
             if twilio_message_sid:
