@@ -23,6 +23,7 @@ def schedule_twilio_message(scheduled_blast):
         return None
 
     recipients = scheduled_blast.recipients.all()
+    message_sids = []
     for recipient in recipients:
         personalized_message = scheduled_blast.message_template.format(**recipient.custom_fields)
         
@@ -34,19 +35,26 @@ def schedule_twilio_message(scheduled_blast):
                 send_at=scheduled_blast.scheduled_time.isoformat(),
                 to=recipient.phone_number
             )
-            return message.sid
+            message_sids.append(message.sid)
         except TwilioException as e:
             print(f"Error scheduling Twilio message: {str(e)}")
             return None
 
-def cancel_twilio_message(message_sid):
+    return ','.join(message_sids)
+
+def cancel_twilio_message(message_sids):
     if client is None:
         print("Twilio client is not initialized. Cannot cancel messages.")
         return False
 
-    try:
-        message = client.messages(message_sid).update(status="canceled")
-        return message.status == "canceled"
-    except TwilioException as e:
-        print(f"Error canceling Twilio message: {str(e)}")
-        return False
+    success = True
+    for message_sid in message_sids.split(','):
+        try:
+            message = client.messages(message_sid).update(status="canceled")
+            if message.status != "canceled":
+                success = False
+        except TwilioException as e:
+            print(f"Error canceling Twilio message: {str(e)}")
+            success = False
+
+    return success

@@ -12,7 +12,7 @@
                 <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Scheduled Time</th>
+                        <th>Scheduled Time (UTC)</th>
                         <th>Status</th>
                         <th>Actions</th>
                     </tr>
@@ -25,7 +25,7 @@
                             <td>{{ blast.status }}</td>
                             <td>
                                 {% if blast.status == 'scheduled' %}
-                                    <form method="POST" action="{{ url_for('cancel_blast', blast_id=blast.id) }}">
+                                    <form method="POST" action="{{ url_for('message_scheduler.cancel_blast', blast_id=blast.id) }}">
                                         <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
                                     </form>
                                 {% endif %}
@@ -37,7 +37,7 @@
         {% else %}
             <p>No scheduled blasts yet.</p>
         {% endif %}
-        <a href="{{ url_for('schedule_blast') }}" class="btn btn-primary">Schedule New Blast</a>
+        <a href="{{ url_for('message_scheduler.schedule_blast') }}" class="btn btn-primary">Schedule New Blast</a>
     </div>
 </div>
 {% endblock %}

@@ -1,10 +1,11 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from models import ScheduledBlast, Recipient, RecipientBlastAssociation, db
-from twilio_integration import schedule_twilio_message
+from twilio_integration import schedule_twilio_message, cancel_twilio_message
 from io import StringIO
 import csv
 from datetime import datetime, timedelta
+import pytz
 from app import app
 
 message_scheduler = Blueprint('message_scheduler', __name__)
@@ -22,12 +23,20 @@ def schedule_blast():
         csv_file = request.files['csv_file']
         message_template = request.form['message_template']
         scheduled_time = datetime.strptime(request.form['scheduled_time'], '%Y-%m-%dT%H:%M')
+        
+        # Convert to Eastern Time
+        eastern = pytz.timezone('US/Eastern')
+        scheduled_time_et = eastern.localize(scheduled_time)
+        
+        # Convert to UTC
+        scheduled_time_utc = scheduled_time_et.astimezone(pytz.UTC)
 
-        if scheduled_time <= datetime.now() + timedelta(minutes=15):
+        now_utc = datetime.now(pytz.UTC)
+        if scheduled_time_utc <= now_utc + timedelta(minutes=15):
             flash('Scheduled time must be at least 15 minutes in the future.', 'danger')
             return redirect(url_for('message_scheduler.schedule_blast'))
 
-        if scheduled_time > datetime.now() + timedelta(days=35):
+        if scheduled_time_utc > now_utc + timedelta(days=35):
             flash('Scheduled time must be within 35 days from now.', 'danger')
             return redirect(url_for('message_scheduler.schedule_blast'))
 
@@ -38,7 +47,7 @@ def schedule_blast():
             new_blast = ScheduledBlast(
                 user_id=current_user.id,
                 message_template=message_template,
-                scheduled_time=scheduled_time,
+                scheduled_time=scheduled_time_utc,
                 status='scheduled'
             )
             db.session.add(new_blast)
@@ -99,7 +108,6 @@ def cancel_blast(blast_id):
         return redirect(url_for('message_scheduler.dashboard'))
     
     if blast.status == 'scheduled':
-        from twilio_integration import cancel_twilio_message
         if cancel_twilio_message(blast.twilio_message_sid):
             blast.status = 'canceled'
             db.session.commit()
