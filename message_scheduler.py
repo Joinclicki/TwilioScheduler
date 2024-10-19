@@ -79,7 +79,13 @@ def schedule_blast():
                         custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
                     )
                     db.session.add(recipient)
-                    db.session.flush()  # This assigns an ID to recipient
+                else:
+                    # Update existing recipient's information
+                    recipient.name = row.get('name', recipient.name)
+                    recipient.email = row.get('email', recipient.email)
+                    recipient.custom_fields.update({k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']})
+
+                db.session.flush()  # This assigns an ID to recipient if it's new
 
                 association = RecipientBlastAssociation(
                     recipient_id=recipient.id,
@@ -89,6 +95,8 @@ def schedule_blast():
 
             if invalid_phone_numbers:
                 flash(f'The following phone numbers are invalid and were skipped: {", ".join(invalid_phone_numbers)}', 'warning')
+
+            db.session.commit()  # Commit the changes before scheduling with Twilio
 
             twilio_message_sid = schedule_twilio_message(new_blast)
             if twilio_message_sid:
