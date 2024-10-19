@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Dashboard</h2>
+<div class="row">
+    <div class="col-md-12">
+        <h3>Scheduled Message Blasts</h3>
+        {% if scheduled_blasts %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Scheduled Time</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for blast in scheduled_blasts %}
+                        <tr>
+                            <td>{{ blast.id }}</td>
+                            <td>{{ blast.scheduled_time.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td>{{ blast.status }}</td>
+                            <td>
+                                {% if blast.status == 'scheduled' %}
+                                    <form method="POST" action="{{ url_for('cancel_blast', blast_id=blast.id) }}">
+                                        <button type="submit" class="btn btn-sm btn-danger">Cancel</button>
+                                    </form>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>No scheduled blasts yet.</p>
+        {% endif %}
+        <a href="{{ url_for('schedule_blast') }}" class="btn btn-primary">Schedule New Blast</a>
+    </div>
+</div>
+{% endblock %}

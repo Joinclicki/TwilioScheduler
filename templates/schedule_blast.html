@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Schedule Message Blast{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">Schedule Message Blast</h2>
+<form method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="csv_file" class="form-label">Upload CSV File</label>
+        <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
+        <small class="form-text text-muted">CSV should contain columns: phone_number, name, email, and any custom fields</small>
+    </div>
+    <div class="mb-3">
+        <label for="message_template" class="form-label">Message Template</label>
+        <textarea class="form-control" id="message_template" name="message_template" rows="4" required></textarea>
+        <small class="form-text text-muted">Use {field_name} for dynamic content (e.g., Hello {name}!)</small>
+    </div>
+    <div class="mb-3">
+        <label for="scheduled_time" class="form-label">Scheduled Time</label>
+        <input type="datetime-local" class="form-control" id="scheduled_time" name="scheduled_time" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Schedule Blast</button>
+</form>
+{% endblock %}
