@@ -40,7 +40,7 @@ def schedule_blast():
     if request.method == 'POST':
         csv_file = request.files['csv_file']
         message_template = request.form['message_template']
-        mms_url = request.form.get('mms_url')  # Get the MMS URL from the form
+        mms_url = request.form.get('mms_url')
         scheduled_time = datetime.strptime(request.form['scheduled_time'], '%Y-%m-%dT%H:%M')
         
         eastern = pytz.timezone('US/Eastern')
@@ -52,8 +52,8 @@ def schedule_blast():
             flash('Scheduled time must be at least 15 minutes in the future.', 'danger')
             return redirect(url_for('message_scheduler.schedule_blast'))
 
-        if scheduled_time_utc > now_utc + timedelta(days=35):
-            flash('Scheduled time must be within 35 days from now.', 'danger')
+        if scheduled_time_utc > now_utc + timedelta(days=7):
+            flash('Scheduled time must be within 7 days from now.', 'danger')
             return redirect(url_for('message_scheduler.schedule_blast'))
 
         try:
@@ -67,7 +67,7 @@ def schedule_blast():
             new_blast = ScheduledBlast(
                 user_id=current_user.id,
                 message_template=message_template,
-                mms_url=mms_url,  # Add the MMS URL to the new blast
+                mms_url=mms_url,
                 scheduled_time=scheduled_time_utc,
                 status='scheduled'
             )

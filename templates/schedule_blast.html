@@ -29,6 +29,7 @@
     <div class="mb-3">
         <label for="scheduled_time" class="form-label">Scheduled Time</label>
         <input type="datetime-local" class="form-control" id="scheduled_time" name="scheduled_time" required>
+        <small class="form-text text-muted">Schedule between 15 minutes and 7 days from now</small>
     </div>
     <button type="submit" class="btn btn-primary">Schedule Blast</button>
 </form>
@@ -40,14 +41,31 @@
 document.addEventListener('DOMContentLoaded', function() {
     const csvFileInput = document.getElementById('csv_file');
     const scheduleBlastForm = document.getElementById('scheduleBlastForm');
+    const scheduledTimeInput = document.getElementById('scheduled_time');
 
     function validatePhoneNumber(phoneNumber) {
         const regex = /^\+[1-9]\d{1,14}$/;
         return regex.test(phoneNumber);
     }
 
+    function validateScheduledTime(scheduledTime) {
+        const now = new Date();
+        const minTime = new Date(now.getTime() + 15 * 60000); // 15 minutes from now
+        const maxTime = new Date(now.getTime() + 7 * 24 * 60 * 60000); // 7 days from now
+
+        return scheduledTime > minTime && scheduledTime <= maxTime;
+    }
+
     scheduleBlastForm.addEventListener('submit', function(event) {
         const file = csvFileInput.files[0];
+        const scheduledTime = new Date(scheduledTimeInput.value);
+
+        if (!validateScheduledTime(scheduledTime)) {
+            alert('Scheduled time must be between 15 minutes and 7 days from now.');
+            event.preventDefault();
+            return;
+        }
+
         if (file) {
             const reader = new FileReader();
             reader.onload = function(e) {
