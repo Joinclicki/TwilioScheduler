@@ -1,0 +1,243 @@
+Message Scheduling
+
+
+(information)
+Info
+The Message Scheduling feature is only available for use with Messaging Services.
+
+(information)
+Info
+Message Scheduling is part of Engagement Suite
+. Visit the SMS Pricing page
+ and WhatsApp Pricing page
+ for price details.
+
+With the Programmable Messaging API, you can schedule SMS, MMS, and WhatsApp messages to be sent at a fixed time in the future.
+
+Message Scheduling is included in Engagement Suite. Scheduling a message is free; you'll only pay for a message once it is sent. For information on Engagement Suite pricing, see the pricing pages for SMS/MMS
+ or WhatsApp
+.
+
+Prefer to watch a video? The video below shows you how to schedule messages using SMS and WhatsApp.
+
+
+Before you begin
+
+
+You first need to understand how to send outgoing, non-scheduled messages with Messaging Services. If you haven't done so, check out How to Send SMS with Messaging Services before you proceed.
+
+If you want to schedule WhatsApp messages, you must have an approved WhatsApp sender added to your Messaging Service's Sender Pool. You also need to have pre-approved WhatsApp templates.
+
+Schedule an outgoing message
+
+
+A "scheduled message" is a Message resource with a Status of scheduled.
+
+When you want to send a normal (non-scheduled) message via the Programmable Messaging API, you create a Message resource. You also need to create a Message resource when creating a scheduled message, but with the addition of two parameters: ScheduleType and SendAt.
+
+Required parameters
+
+
+The parameters required to create a scheduled message are listed below.
+
+Required parameter	Required value	Additional information
+ScheduleType	fixed	This parameter/value combination indicates to Twilio that the message should be sent at a fixed time in the future.
+SendAt	A datetime string in ISO-8601 format (e.g., 2021-11-30T20:36:27Z)	This is the date and time at which the message will be sent.
+
+Messages must be scheduled at least 15 minutes before the intended send time. This means that the POST request that creates the Message resource must be sent at least 15 minutes before the SendAt value.
+
+Messages must be scheduled no more than 35 days before the intended send time. This means that the POST request that creates the Message resource must be sent no more than 35 days before the SendAt value.
+MessagingServiceSid	The Messaging Service SID from which the message will be sent	Note: Without a MessagingServiceSid, Twilio treats the message as a non-scheduled message and the message is sent immediately.
+Body or MediaUrl or ContentSid	The content of the scheduled message (e.g., "This is a scheduled message.")	
+To	The recipient's phone number (e.g., +15558885333)
+
+or
+
+the recipient's channel address (e.g., whatsapp:+15558675310)	
+Create a scheduled message
+
+Node.js
+
+Copy code block
+// Download the helper library from https://www.twilio.com/docs/node/install
+const twilio = require("twilio"); // Or, for ESM: import twilio from "twilio";
+
+// Find your Account SID and Auth Token at twilio.com/console
+// and set the environment variables. See http://twil.io/secure
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = twilio(accountSid, authToken);
+
+async function createMessage() {
+  const message = await client.messages.create({
+    body: "This is a scheduled message",
+    messagingServiceSid: "MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    scheduleType: "fixed",
+    sendAt: new Date("2021-11-30 20:36:27"),
+    to: "+15558675310",
+  });
+
+  console.log(message.body);
+}
+
+createMessage();
+Output
+
+Copy output
+{
+  "account_sid": "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "api_version": "2010-04-01",
+  "body": "This is a scheduled message",
+  "date_created": "Mon, 29 Nov 2021 22:40:10 +0000",
+  "date_sent": null,
+  "date_updated": "Mon, 29 Nov 2021 22:40:10 +0000",
+  "direction": "outbound-api",
+  "error_code": null,
+  "error_message": null,
+  "from": null,
+  "messaging_service_sid": "MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "num_media": "0",
+  "num_segments": "0",
+  "price": null,
+  "price_unit": null,
+  "sid": "SMaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "status": "queued",
+  "subresource_uris": {
+    "media": "/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages/SMaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Media.json"
+  },
+  "tags": null,
+  "to": "+15558675310",
+  "uri": "/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages/SMaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.json"
+}
+Twilio's response
+
+
+Twilio's response to your POST request indicates whether or not your message was scheduled successfully.
+
+If your POST request to create the scheduled Message resource was valid, Twilio returns a 201 (scheduled) HTTP status code.
+If your request was invalid, Twilio returns a 400 HTTP status code.
+A scheduled Message resource has a Status of scheduled. You can check the status in the body of the response from Twilio, or by fetching the Message resource.
+
+Note: No status callback event is emitted when a message is scheduled.
+
+You should save the SID of the scheduled Message resource in case you need to cancel sending the message. This is found via the sid property of Twilio's response.
+
+Below is an example of a response from Twilio, with the status and sid properties highlighted.
+
+
+Copy code block
+{
+  "account_sid": "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "api_version": "2010-04-01",
+  "body": "This is a scheduled message",
+  "date_created": "Mon, 29 Nov 2021 22:40:10 +0000",
+  "date_sent": null,
+  "date_updated": "Mon, 29 Nov 2021 22:40:10 +0000",
+  "direction": "outbound-api",
+  "error_code": null,
+  "error_message": null,
+  "from": null,
+  "messaging_service_sid": "MGXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "num_media": "0",
+  "num_segments": "0",
+  "price": null,
+  "price_unit": null,
+  "sid": "SMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+  "status": "scheduled",
+  "subresource_uris": {
+    "media": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Messages/SMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Media.json"
+  },
+  "to": "+15558675310",
+  "uri": "/2010-04-01/Accounts/ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX/Messages/SMXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX.json"
+}
+Send-time failures
+
+
+Sometimes, a Message is successfully created with a Status of scheduled, but the message fails at the SendAt time. Two of these cases are covered below.
+
+User-opt outs
+
+
+User opt-outs do not automatically cancel scheduled messages. Scheduled messages to users who have opted out fail at the SendAt time.
+
+If a user opts out of receiving messages, you can cancel the remaining scheduled messages to that user. See the "Cancel a scheduled message" section below for more information.
+
+WhatsApp template validation failures
+
+
+WhatsApp requires that business-initiated notifications sent by your application be templated and pre-registered, with the exception of messages sent as a reply to a user-initiated message. Check out Twilio's WhatsApp docs for more information.
+
+Validation of pre-registered templates occurs at the SendAt time, not when the Message resource is created. Messages that don't use a pre-approved WhatsApp template fail at send time.
+
+Cancel a scheduled message
+
+
+To cancel a scheduled message, update the Message resource so that the Status is canceled.
+
+A canceled status callback event is emitted when a Message resource's status transitions to canceled.
+
+An example API request to cancel a scheduled message is shown below.
+
+Cancel a scheduled message
+
+Node.js
+
+Copy code block
+// Download the helper library from https://www.twilio.com/docs/node/install
+const twilio = require("twilio"); // Or, for ESM: import twilio from "twilio";
+
+// Find your Account SID and Auth Token at twilio.com/console
+// and set the environment variables. See http://twil.io/secure
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = twilio(accountSid, authToken);
+
+async function updateMessage() {
+  const message = await client
+    .messages("SMaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+    .update({ status: "canceled" });
+
+  console.log(message.body);
+}
+
+updateMessage();
+Output
+
+Copy output
+{
+  "account_sid": "ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "api_version": "2010-04-01",
+  "body": "Hello World!",
+  "date_created": "Fri, 24 May 2019 17:18:27 +0000",
+  "date_sent": null,
+  "date_updated": "Fri, 24 May 2019 18:18:28 +0000",
+  "direction": "outbound-api",
+  "error_code": null,
+  "error_message": null,
+  "from": null,
+  "messaging_service_sid": "MGaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "num_media": "0",
+  "num_segments": "1",
+  "price": null,
+  "price_unit": "USD",
+  "sid": "SMaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "status": "canceled",
+  "subresource_uris": {
+    "media": "/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages/SMb7c0a2ce80504485a6f653a7110836f5/Media.json",
+    "feedback": "/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages/SMb7c0a2ce80504485a6f653a7110836f5/Feedback.json"
+  },
+  "tags": {},
+  "to": "+18182008801",
+  "uri": "/2010-04-01/Accounts/ACaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/Messages/SMb7c0a2ce80504485a6f653a7110836f5.json"
+}
+Maximum number of scheduled messages
+
+
+Each Account (including Subaccounts) are allowed up to 500,000 scheduled messages (i.e. Message resources with scheduled statuses) at any given time. Subaccount limits are separate from the parent Account and do not consume the parent Account's allocation.
+
+Additional resources
+
+
+"Message Scheduling FAQs" Help Center article
+How to Send SMS Messages with Messaging Services
+Message Resource API Documentation
