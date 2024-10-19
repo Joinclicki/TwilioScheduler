@@ -3,6 +3,7 @@ from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
+from flask_migrate import Migrate
 
 class Base(DeclarativeBase):
     pass
@@ -18,6 +19,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 
 db.init_app(app)
+migrate = Migrate(app, db)
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -27,9 +29,8 @@ with app.app_context():
     import models
     import auth
     from message_scheduler import message_scheduler
-    # Remove this line as we're registering the blueprint in message_scheduler.py
+    # Remove the following line as it's already registered in message_scheduler.py
     # app.register_blueprint(message_scheduler)
-    db.create_all()
 
 @app.route('/')
 def index():

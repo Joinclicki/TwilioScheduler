@@ -9,6 +9,7 @@ import pytz
 from app import app
 import re
 import logging
+import json
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -107,9 +108,9 @@ def schedule_blast():
             db.session.commit()  # Commit the changes before scheduling with Twilio
             logger.info(f"Committed changes to database for ScheduledBlast ID: {new_blast.id}")
 
-            twilio_message_sid = schedule_twilio_message(new_blast)
-            if twilio_message_sid:
-                new_blast.twilio_message_sid = twilio_message_sid
+            twilio_message_sids = schedule_twilio_message(new_blast)
+            if twilio_message_sids:
+                new_blast.twilio_message_sid = twilio_message_sids
                 db.session.commit()
                 flash('Message blast scheduled successfully!', 'success')
                 logger.info(f"Successfully scheduled Twilio messages for ScheduledBlast ID: {new_blast.id}")

@@ -1,4 +1,5 @@
 import os
+import json
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioException, TwilioRestException
 import re
@@ -55,15 +56,16 @@ def schedule_twilio_message(scheduled_blast):
         except Exception as e:
             logger.error(f"Unexpected error scheduling message for {recipient.phone_number}: {str(e)}")
 
-    return ','.join(message_sids) if message_sids else None
+    return json.dumps(message_sids) if message_sids else None
 
-def cancel_twilio_message(message_sids):
+def cancel_twilio_message(message_sids_json):
     if client is None:
         logger.error("Twilio client is not initialized. Cannot cancel messages.")
         return False
 
     success = True
-    for message_sid in message_sids.split(','):
+    message_sids = json.loads(message_sids_json)
+    for message_sid in message_sids:
         try:
             message = client.messages(message_sid).update(status="canceled")
             if message.status != "canceled":

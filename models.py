@@ -3,6 +3,7 @@ from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.orm import validates, relationship
 import re
+import json
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -38,8 +39,14 @@ class ScheduledBlast(db.Model):
     message_template = db.Column(db.Text, nullable=False)
     scheduled_time = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled')
-    twilio_message_sid = db.Column(db.String(34))
+    twilio_message_sid = db.Column(db.Text)  # Changed from String(34) to Text
     recipient_associations = relationship('RecipientBlastAssociation', back_populates='scheduled_blast', cascade='all, delete-orphan')
+
+    def set_twilio_message_sids(self, sids):
+        self.twilio_message_sid = json.dumps(sids)
+
+    def get_twilio_message_sids(self):
+        return json.loads(self.twilio_message_sid) if self.twilio_message_sid else []
 
 class RecipientBlastAssociation(db.Model):
     id = db.Column(db.Integer, primary_key=True)

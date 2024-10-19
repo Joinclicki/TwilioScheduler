@@ -11,4 +11,5 @@ dependencies = [
     "twilio>=9.3.4",
     "flask-login>=0.6.3",
     "pytz>=2024.2",
+    "flask-migrate>=4.0.7",
 ]
