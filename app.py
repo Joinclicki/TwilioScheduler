@@ -1,5 +1,5 @@
 import os
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 from flask_login import LoginManager
@@ -30,6 +30,10 @@ with app.app_context():
     # Remove this line as we're registering the blueprint in message_scheduler.py
     # app.register_blueprint(message_scheduler)
     db.create_all()
+
+@app.route('/')
+def index():
+    return redirect(url_for('message_scheduler.dashboard'))
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)

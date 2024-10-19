@@ -8,6 +8,10 @@ from datetime import datetime, timedelta
 import pytz
 from app import app
 import re
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 message_scheduler = Blueprint('message_scheduler', __name__)
 
@@ -62,6 +66,7 @@ def schedule_blast():
             )
             db.session.add(new_blast)
             db.session.flush()  # This assigns an ID to new_blast
+            logger.info(f"Created new ScheduledBlast with ID: {new_blast.id}")
 
             invalid_phone_numbers = []
             for row in csv_data:
@@ -79,11 +84,13 @@ def schedule_blast():
                         custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
                     )
                     db.session.add(recipient)
+                    logger.info(f"Created new Recipient with phone number: {phone_number}")
                 else:
                     # Update existing recipient's information
                     recipient.name = row.get('name', recipient.name)
                     recipient.email = row.get('email', recipient.email)
                     recipient.custom_fields.update({k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']})
+                    logger.info(f"Updated existing Recipient with phone number: {phone_number}")
 
                 db.session.flush()  # This assigns an ID to recipient if it's new
 
@@ -92,23 +99,28 @@ def schedule_blast():
                     scheduled_blast_id=new_blast.id
                 )
                 db.session.add(association)
+                logger.info(f"Created RecipientBlastAssociation for Recipient ID: {recipient.id} and ScheduledBlast ID: {new_blast.id}")
 
             if invalid_phone_numbers:
                 flash(f'The following phone numbers are invalid and were skipped: {", ".join(invalid_phone_numbers)}', 'warning')
 
             db.session.commit()  # Commit the changes before scheduling with Twilio
+            logger.info(f"Committed changes to database for ScheduledBlast ID: {new_blast.id}")
 
             twilio_message_sid = schedule_twilio_message(new_blast)
             if twilio_message_sid:
                 new_blast.twilio_message_sid = twilio_message_sid
                 db.session.commit()
                 flash('Message blast scheduled successfully!', 'success')
+                logger.info(f"Successfully scheduled Twilio messages for ScheduledBlast ID: {new_blast.id}")
             else:
                 db.session.rollback()
                 flash('Failed to schedule message blast with Twilio.', 'danger')
+                logger.error(f"Failed to schedule Twilio messages for ScheduledBlast ID: {new_blast.id}")
         except Exception as e:
             db.session.rollback()
             flash(f'Error scheduling message blast: {str(e)}', 'danger')
+            logger.error(f"Error scheduling message blast: {str(e)}")
 
         return redirect(url_for('message_scheduler.dashboard'))
 
@@ -141,8 +153,10 @@ def cancel_blast(blast_id):
             blast.status = 'canceled'
             db.session.commit()
             flash('Message blast canceled successfully.', 'success')
+            logger.info(f"Successfully canceled ScheduledBlast ID: {blast_id}")
         else:
             flash('Failed to cancel the message blast with Twilio.', 'danger')
+            logger.error(f"Failed to cancel ScheduledBlast ID: {blast_id} with Twilio")
     else:
         flash('This blast cannot be canceled.', 'warning')
     
