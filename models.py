@@ -36,11 +36,10 @@ class ScheduledBlast(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     user = relationship('User', back_populates='scheduled_blasts')
-    blast_name = db.Column(db.String(100), nullable=False)  # New field
     message_template = db.Column(db.Text, nullable=False)
     scheduled_time = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), default='scheduled')
-    twilio_message_sid = db.Column(db.Text)
+    twilio_message_sid = db.Column(db.Text)  # Changed from String(34) to Text
     recipient_associations = relationship('RecipientBlastAssociation', back_populates='scheduled_blast', cascade='all, delete-orphan')
 
     def set_twilio_message_sids(self, sids):

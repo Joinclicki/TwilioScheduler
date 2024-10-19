@@ -6,10 +6,6 @@
 <h2 class="mb-4">Schedule Message Blast</h2>
 <form method="POST" enctype="multipart/form-data" id="scheduleBlastForm">
     <div class="mb-3">
-        <label for="blast_name" class="form-label">Blast Name</label>
-        <input type="text" class="form-control" id="blast_name" name="blast_name" required>
-    </div>
-    <div class="mb-3">
         <label for="csv_file" class="form-label">Upload CSV File</label>
         <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv" required>
         <small class="form-text text-muted">CSV should contain columns: phone_number (required, E.164 format), name, email, and any custom fields</small>
@@ -35,4 +31,51 @@
 
 {% block scripts %}
 <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const csvFileInput = document.getElementById('csv_file');
+    const scheduleBlastForm = document.getElementById('scheduleBlastForm');
+
+    function validatePhoneNumber(phoneNumber) {
+        const regex = /^\+[1-9]\d{1,14}$/;
+        return regex.test(phoneNumber);
+    }
+
+    scheduleBlastForm.addEventListener('submit', function(event) {
+        const file = csvFileInput.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n');
+                const headers = lines[0].split(',');
+                const phoneNumberIndex = headers.indexOf('phone_number');
+
+                if (phoneNumberIndex === -1) {
+                    alert('CSV file must contain a "phone_number" column.');
+                    event.preventDefault();
+                    return;
+                }
+
+                let invalidPhoneNumbers = [];
+                for (let i = 1; i < lines.length; i++) {
+                    const fields = lines[i].split(',');
+                    if (fields.length > phoneNumberIndex) {
+                        const phoneNumber = fields[phoneNumberIndex].trim();
+                        if (!validatePhoneNumber(phoneNumber)) {
+                            invalidPhoneNumbers.push(phoneNumber);
+                        }
+                    }
+                }
+
+                if (invalidPhoneNumbers.length > 0) {
+                    alert('The following phone numbers are invalid: ' + invalidPhoneNumbers.join(', ') + '\nPlease correct them and try again.');
+                    event.preventDefault();
+                }
+            };
+            reader.readAsText(file);
+        }
+    });
+});
+</script>
 {% endblock %}
