@@ -70,14 +70,16 @@ def schedule_blast():
                     invalid_phone_numbers.append(phone_number)
                     continue
 
-                recipient = Recipient(
-                    phone_number=phone_number,
-                    name=row.get('name', ''),
-                    email=row.get('email', ''),
-                    custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
-                )
-                db.session.add(recipient)
-                db.session.flush()  # This assigns an ID to recipient
+                recipient = Recipient.query.filter_by(phone_number=phone_number).first()
+                if not recipient:
+                    recipient = Recipient(
+                        phone_number=phone_number,
+                        name=row.get('name', ''),
+                        email=row.get('email', ''),
+                        custom_fields={k: v for k, v in row.items() if k not in ['phone_number', 'name', 'email']}
+                    )
+                    db.session.add(recipient)
+                    db.session.flush()  # This assigns an ID to recipient
 
                 association = RecipientBlastAssociation(
                     recipient_id=recipient.id,

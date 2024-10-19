@@ -31,9 +31,9 @@ def schedule_twilio_message(scheduled_blast):
         logger.error("Twilio client is not initialized. Cannot schedule messages.")
         return None
 
-    recipients = scheduled_blast.recipients.all()
     message_sids = []
-    for recipient in recipients:
+    for association in scheduled_blast.recipient_associations:
+        recipient = association.recipient
         personalized_message = scheduled_blast.message_template.format(**recipient.custom_fields)
         
         if not is_valid_phone_number(recipient.phone_number):
